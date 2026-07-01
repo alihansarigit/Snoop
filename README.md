@@ -8,10 +8,10 @@ status, timing, headers, and pretty-printed JSON bodies. Inert in release builds
 
 ## Demo
 
-<video src="https://github.com/alihansarigit/Snoop/raw/main/sample/video.gif" controls muted width="300"></video>
+![Snoop demo — the draggable bubble inspecting live OkHttp & Ktor traffic](sample/video.gif)
 
 Drag the bubble, tap it, and inspect every OkHttp / Ktor request — status, timing,
-headers, and pretty-printed JSON. If the player doesn't load, [watch the clip](sample/video.mp4).
+headers, and pretty-printed JSON.
 
 ## Features
 
