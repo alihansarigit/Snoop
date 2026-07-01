@@ -27,6 +27,12 @@ render.experimental.xml
 *.jks
 *.keystore
 
+# Signing / publishing credentials (defensive)
+keystore.properties
+signing.properties
+*.asc
+secring.gpg
+
 # Google Services (e.g. APIs or Firebase)
 google-services.json
 
