@@ -8,12 +8,12 @@ plugins {
 
 android {
     namespace = "io.github.alihansarigit.snoop.sample"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "io.github.alihansarigit.snoop.sample"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
     }
@@ -48,11 +48,14 @@ dependencies {
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
     implementation(libs.okhttp)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.okhttp)
     debugImplementation(libs.compose.ui.tooling)
 
     // Real overlay in debug, inert no-op in release.
     debugImplementation(project(":core"))
     debugImplementation(project(":okhttp"))
+    debugImplementation(project(":ktor"))
     releaseImplementation(project(":no-op"))
 }
 

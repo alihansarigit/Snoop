@@ -19,7 +19,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.github.alihansarigit.snoop.Snoop
+import io.github.alihansarigit.snoop.ktor.SnoopKtor
 import io.github.alihansarigit.snoop.okhttp.SnoopInterceptor
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -39,6 +49,13 @@ class MainActivity : ComponentActivity() {
             .build()
     }
 
+    // A Ktor client captured by the same overlay — install the plugin and go.
+    private val ktorClient by lazy {
+        HttpClient(OkHttp) {
+            install(SnoopKtor)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -49,6 +66,8 @@ class MainActivity : ComponentActivity() {
                     onList = { fetch("https://jsonplaceholder.typicode.com/posts") },
                     onPost = ::post,
                     onBearer = ::fetchWithBearer,
+                    onKtorGet = { ktorGet("https://jsonplaceholder.typicode.com/posts/1") },
+                    onKtorPost = ::ktorPost,
                     onError = { fetch("https://jsonplaceholder.typicode.com/does-not-exist") },
                     onOpenInspector = { Snoop.launchInspector(this) },
                     shakeEnabled = shakeEnabled,
@@ -110,6 +129,24 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun ktorGet(url: String) {
+        scope.launch {
+            runCatching { ktorClient.get(url).bodyAsText() }
+        }
+    }
+
+    private fun ktorPost() {
+        scope.launch {
+            runCatching {
+                ktorClient.post("https://httpbin.org/post") {
+                    header("Authorization", "Bearer $bearerToken")
+                    contentType(ContentType.Application.Json)
+                    setBody("""{"title":"snoop ktor demo","userId":1,"via":"ktor"}""")
+                }.bodyAsText()
+            }
+        }
+    }
 }
 
 @Composable
@@ -118,6 +155,8 @@ private fun SampleScreen(
     onList: () -> Unit,
     onPost: () -> Unit,
     onBearer: () -> Unit,
+    onKtorGet: () -> Unit,
+    onKtorPost: () -> Unit,
     onError: () -> Unit,
     onOpenInspector: () -> Unit,
     shakeEnabled: Boolean,
@@ -133,6 +172,8 @@ private fun SampleScreen(
         Button(onClick = onList, modifier = Modifier.fillMaxWidth()) { Text("GET /posts (list)") }
         Button(onClick = onPost, modifier = Modifier.fillMaxWidth()) { Text("POST /post (auth)") }
         Button(onClick = onBearer, modifier = Modifier.fillMaxWidth()) { Text("GET /bearer (auth)") }
+        Button(onClick = onKtorGet, modifier = Modifier.fillMaxWidth()) { Text("Ktor GET /posts/1") }
+        Button(onClick = onKtorPost, modifier = Modifier.fillMaxWidth()) { Text("Ktor POST /post (auth)") }
         Button(onClick = onError, modifier = Modifier.fillMaxWidth()) { Text("GET 404") }
         Button(onClick = onOpenInspector, modifier = Modifier.fillMaxWidth()) { Text("Open inspector") }
         Button(onClick = onToggleShake, modifier = Modifier.fillMaxWidth()) {

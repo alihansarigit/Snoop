@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "io.github.alihansarigit.snoop.okhttp"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 24

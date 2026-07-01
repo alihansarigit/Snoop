@@ -23,5 +23,6 @@ dependencyResolutionManagement {
 rootProject.name = "Snoop"
 include(":core")
 include(":okhttp")
+include(":ktor")
 include(":no-op")
 include(":sample")

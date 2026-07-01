@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "io.github.alihansarigit.snoop.noop"
+    namespace = "io.github.alihansarigit.snoop.ktor"
     compileSdk = 36
 
     defaultConfig {
@@ -23,9 +23,6 @@ android {
 }
 
 dependencies {
-    // Types referenced by the public API surface; provided by the consuming app.
-    compileOnly(platform(libs.androidx.compose.bom))
-    compileOnly(libs.compose.runtime)
-    compileOnly(libs.okhttp)
-    compileOnly(libs.ktor.client.core)
+    api(project(":core"))
+    api(libs.ktor.client.core)
 }
