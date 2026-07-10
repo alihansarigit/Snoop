@@ -3,6 +3,7 @@ package io.github.alihansarigit.snoop.ktor
 import io.github.alihansarigit.snoop.Snoop
 import io.github.alihansarigit.snoop.model.NetworkTransaction
 import io.github.alihansarigit.snoop.model.TransactionStatus
+import io.github.alihansarigit.snoop.util.decodeBody
 import io.ktor.client.call.HttpClientCall
 import io.ktor.client.call.body
 import io.ktor.client.call.save
@@ -114,7 +115,10 @@ private suspend fun captureResponse(
     } catch (_: Throwable) {
         null
     }
-    val body = bytes?.let { decodeBounded(it, response.charset(), maxBodyBytes) }
+    val decoded = bytes?.let {
+        if (Snoop.config.decodeBodies) decodeBody(it, response.headers["Content-Encoding"]) else it
+    }
+    val body = decoded?.let { decodeBounded(it, response.charset(), maxBodyBytes) }
     val size = bytes?.size?.toLong() ?: (response.contentLength() ?: -1L)
     recordResponse(id, response, body, size, startNs)
     return saved

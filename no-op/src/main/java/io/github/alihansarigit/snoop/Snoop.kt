@@ -10,6 +10,9 @@ import androidx.compose.runtime.Composable
  */
 object Snoop {
 
+    @JvmField
+    val config: SnoopConfig = SnoopConfig()
+
     var enabled: Boolean = false
 
     var shakeToShow: Boolean = true

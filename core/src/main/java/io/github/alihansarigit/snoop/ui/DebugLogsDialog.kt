@@ -35,6 +35,7 @@ import io.github.alihansarigit.snoop.Snoop
 import io.github.alihansarigit.snoop.model.NetworkTransaction
 import io.github.alihansarigit.snoop.model.TransactionStatus
 import io.github.alihansarigit.snoop.util.allLogsDump
+import io.github.alihansarigit.snoop.util.harExport
 
 private enum class LogFilter { ALL, ERRORS, PENDING }
 
@@ -109,6 +110,7 @@ internal fun DebugLogsContent(
             NcChip("…PEND ($pendingCount)", filter == LogFilter.PENDING, NcColors.FilterPend) { filter = LogFilter.PENDING }
             NcButton("CLEAR", bg = NcColors.ActionClear, idleDim = true) { Snoop.clear() }
             NcButton("ALL COPY LOG", bg = NcColors.ActionCopyAll, idleDim = true) { copy(allLogsDump(filtered)) }
+            NcButton("HAR COPY", bg = NcColors.ActionHar, idleDim = true) { copy(harExport(filtered)) }
             NcButton("GİZLE", bg = NcColors.ActionHide, idleDim = true) {
                 onDismiss()
                 Snoop.hide()
