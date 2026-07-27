@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.compose.ui.platform.ComposeView
+import androidx.lifecycle.LifecycleOwner
 import io.github.alihansarigit.snoop.ui.SnoopOverlay
 import java.lang.ref.WeakReference
 
@@ -46,6 +47,13 @@ internal class OverlayManager : Application.ActivityLifecycleCallbacks {
     }
 
     private fun attachOverlay(activity: Activity) {
+        // A ComposeView needs a ViewTreeLifecycleOwner on its ancestor chain to build its window
+        // recomposer. ComponentActivity (and AppCompat/Fragment activities) provide one; bare
+        // android.app.Activity screens such as AdMob's full-screen AdActivity, Chrome Custom Tabs,
+        // or Google Pay do not. Attaching there throws "ViewTreeLifecycleOwner not found from
+        // ComposeView". A debug bubble over a third-party/ad screen isn't wanted anyway — skip it.
+        if (activity !is LifecycleOwner) return
+
         val content = activity.findViewById<ViewGroup>(android.R.id.content) ?: return
         if (content.findViewWithTag<ComposeView>(BUBBLE_TAG) != null) return
 
