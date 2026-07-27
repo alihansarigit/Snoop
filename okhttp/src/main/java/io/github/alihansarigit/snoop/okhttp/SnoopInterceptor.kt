@@ -3,6 +3,7 @@ package io.github.alihansarigit.snoop.okhttp
 import io.github.alihansarigit.snoop.Snoop
 import io.github.alihansarigit.snoop.model.NetworkTransaction
 import io.github.alihansarigit.snoop.model.TransactionStatus
+import io.github.alihansarigit.snoop.util.decodeBody
 import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response
@@ -61,7 +62,15 @@ class SnoopInterceptor @JvmOverloads constructor(
         }
 
         val responseBody = try {
-            response.peekBody(maxBodyBytes).string()
+            val peeked = response.peekBody(maxBodyBytes)
+            val charset = peeked.contentType()?.charset() ?: Charsets.UTF_8
+            val raw = peeked.bytes()
+            val decoded = if (Snoop.config.decodeBodies) {
+                decodeBody(raw, response.header("Content-Encoding"))
+            } else {
+                raw
+            }
+            String(decoded, charset)
         } catch (_: Exception) {
             null
         }

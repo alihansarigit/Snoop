@@ -30,6 +30,7 @@ import io.github.alihansarigit.snoop.model.TransactionStatus
 import io.github.alihansarigit.snoop.util.formatDuration
 import io.github.alihansarigit.snoop.util.formatTime
 import io.github.alihansarigit.snoop.util.fullDump
+import io.github.alihansarigit.snoop.util.harExport
 import io.github.alihansarigit.snoop.util.toCurl
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -89,6 +90,7 @@ internal fun LogRow(tx: NetworkTransaction, copy: (String) -> Unit) {
             NcButton("RESPONSE COPY", bg = NcColors.CopyResponse, idleDim = true) { copy(tx.responseBody.orEmpty()) }
             NcButton("CURL COPY", bg = NcColors.CopyCurl, idleDim = true) { copy(tx.toCurl()) }
             NcButton("FULL COPY", bg = NcColors.CopyFull, idleDim = true) { copy(tx.fullDump()) }
+            NcButton("HAR COPY", bg = NcColors.CopyHar, idleDim = true) { copy(harExport(listOf(tx))) }
         }
 
         if (reqOpen) {

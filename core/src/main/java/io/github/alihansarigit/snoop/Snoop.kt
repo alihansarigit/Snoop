@@ -7,20 +7,34 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import io.github.alihansarigit.snoop.internal.OverlayManager
 import io.github.alihansarigit.snoop.internal.OverlayState
+import io.github.alihansarigit.snoop.store.DiskPersistence
 import io.github.alihansarigit.snoop.store.NetworkLogStore
+import java.io.File
 
 /**
  * Public entry point for Snoop.
  *
  * Snoop auto-installs through `androidx.startup`, so for most apps no code is
  * needed beyond adding the capture interceptor. The methods here let you control
- * the bubble and extend the logs dialog with custom sections.
+ * the bubble and extend the logs dialog with custom sections, and [config] holds
+ * runtime settings such as redaction and disk persistence.
  */
 object Snoop {
 
+    /**
+     * Central runtime configuration — redaction, body decoding and disk persistence.
+     * Safe to touch from any thread; changes apply to later captures.
+     */
+    @JvmField
+    val config: SnoopConfig = SnoopConfig().apply {
+        onPersistenceToggled = { enabled ->
+            if (enabled) startPersistence() else stopPersistence()
+        }
+    }
+
     /** Shared capture store. Used by capture adapters; not part of the app-facing API. */
     @get:RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
-    val store: NetworkLogStore = NetworkLogStore()
+    val store: NetworkLogStore = NetworkLogStore().apply { redactor = config::redact }
 
     /** Whether the floating bubble is shown. Backed by observable overlay state. */
     var enabled: Boolean
@@ -45,14 +59,18 @@ object Snoop {
     internal val customSections = mutableStateListOf<DebugSection>()
 
     private var overlayManager: OverlayManager? = null
+    private var appContext: Context? = null
+    private var diskPersistence: DiskPersistence? = null
 
     /** Attach the overlay to every activity. Idempotent. */
     @JvmStatic
     fun install(application: Application) {
         if (overlayManager != null) return
+        appContext = application.applicationContext
         val manager = OverlayManager()
         application.registerActivityLifecycleCallbacks(manager)
         overlayManager = manager
+        if (config.persistenceEnabled) startPersistence()
     }
 
     /** Show the bubble again after [hide]. */
@@ -87,6 +105,29 @@ object Snoop {
     fun registerSection(title: String, content: @Composable () -> Unit) {
         customSections.removeAll { it.title == title }
         customSections.add(DebugSection(title, content))
+    }
+
+    /**
+     * Start disk persistence, restoring any retained transactions. Requires [install] to
+     * have captured an application context (it has, once App Startup runs). Idempotent, and
+     * invoked automatically when [SnoopConfig.persistenceEnabled] flips to `true`.
+     */
+    @Synchronized
+    internal fun startPersistence() {
+        if (diskPersistence != null) return
+        val context = appContext ?: return
+        val file = File(File(context.filesDir, "snoop"), "transactions.json")
+        val persistence = DiskPersistence(file, config)
+        store.restore(persistence.load())
+        persistence.observe(store.transactions)
+        diskPersistence = persistence
+    }
+
+    /** Stop disk persistence and release its background scope. Data already on disk is kept. */
+    @Synchronized
+    internal fun stopPersistence() {
+        diskPersistence?.close()
+        diskPersistence = null
     }
 }
 

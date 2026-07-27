@@ -56,6 +56,7 @@ internal object NcColors {
     val FilterPend = Color(0xFFD97706)  // amber
     val ActionClear = Color(0xFF14B8A6) // teal
     val ActionCopyAll = Color(0xFF8B5CF6) // violet
+    val ActionHar = Color(0xFF0EA5E9)   // sky
     val ActionHide = Color(0xFFEC4899)  // pink
     val ActionClose = Color(0xFF64748B) // slate
 
@@ -67,6 +68,7 @@ internal object NcColors {
     val CopyRequest = Color(0xFF06B6D4)   // cyan
     val CopyResponse = Color(0xFF84CC16)  // lime
     val CopyCurl = Color(0xFFEAB308)      // yellow
+    val CopyHar = Color(0xFF0D9488)       // deep teal
 }
 
 /** Opacity applied to a toolbar button's fill when it is not selected / not pressed. */
