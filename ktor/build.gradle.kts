@@ -25,4 +25,7 @@ android {
 dependencies {
     api(project(":core"))
     api(libs.ktor.client.core)
+    testImplementation(libs.junit)
+    testImplementation(libs.ktor.client.mock)
+    testImplementation(libs.kotlinx.coroutines.android)
 }

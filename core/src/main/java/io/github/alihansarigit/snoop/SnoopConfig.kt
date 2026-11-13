@@ -71,6 +71,28 @@ class SnoopConfig internal constructor() {
     @Volatile
     var maxAgeMillis: Long = 0L
 
+    /** When enabled (default), shaking opens the feedback capture surface. */
+    @Volatile
+    var shakeOpensFeedback: Boolean = true
+
+    /** Capture a crash envelope and present it on the next process launch. */
+    @Volatile
+    var crashCaptureEnabled: Boolean = true
+
+    /**
+     * Try to ingest this process' Logcat into the diagnostic ring buffer. Some Android builds
+     * restrict Logcat access; SDK and explicitly submitted logs are retained regardless.
+     */
+    @Volatile
+    var logcatCaptureEnabled: Boolean = true
+
+    /**
+     * Device-side port used by the optional desktop project bridge. The daemon
+     * maps the same host port with `adb reverse`. Default `8737`.
+     */
+    @Volatile
+    var desktopBridgePort: Int = 8737
+
     /**
      * Add header names to the redaction set (case-insensitive). `Authorization`,
      * `Proxy-Authorization`, `Cookie`, `Set-Cookie` and `X-Api-Key` are covered by

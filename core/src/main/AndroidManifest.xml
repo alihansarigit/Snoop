@@ -2,6 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Package visibility for the "send to Claude" action on Android 11+. -->
+    <queries>
+        <package android:name="com.anthropic.claude" />
+    </queries>
+
     <application>
 
         <provider
@@ -13,6 +21,12 @@
                 android:name="io.github.alihansarigit.snoop.internal.SnoopInitializer"
                 android:value="androidx.startup" />
         </provider>
+
+        <provider
+            android:name="io.github.alihansarigit.snoop.feedback.SnoopAttachmentProvider"
+            android:authorities="${applicationId}.snoop.attachments"
+            android:exported="false"
+            android:grantUriPermissions="true" />
 
     </application>
 

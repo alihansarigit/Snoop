@@ -2,26 +2,30 @@ package io.github.alihansarigit.snoop.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -38,6 +42,8 @@ internal object NcColors {
     val Border = Color(0xFF374151)
     val Text = Color(0xFFE5E7EB)
     val Muted = Color(0xFF9CA3AF)
+    val TextOnLight = Color.Black
+    val ErrorText = Color(0xFFFCA5A5)
     val Accent = Color(0xFF2563EB)
     val Ok = Color(0xFF16A34A)
     val Err = Color(0xFFB91C1C)
@@ -69,6 +75,51 @@ internal object NcColors {
     val CopyResponse = Color(0xFF84CC16)  // lime
     val CopyCurl = Color(0xFFEAB308)      // yellow
     val CopyHar = Color(0xFF0D9488)       // deep teal
+    val Replay = Color(0xFF7C3AED)        // violet
+    val Mock = Color(0xFFBE123C)          // rose
+}
+
+internal val SnoopDarkColorScheme = darkColorScheme(
+    primary = NcColors.Accent,
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFF1E3A8A),
+    onPrimaryContainer = Color(0xFFDBEAFE),
+    secondary = NcColors.Toggle,
+    onSecondary = NcColors.TextOnLight,
+    secondaryContainer = Color(0xFF78350F),
+    onSecondaryContainer = Color(0xFFFEF3C7),
+    background = NcColors.PanelBg,
+    onBackground = NcColors.Text,
+    surface = NcColors.PanelBg,
+    onSurface = NcColors.Text,
+    surfaceVariant = NcColors.RowBg,
+    onSurfaceVariant = NcColors.Muted,
+    outline = Color(0xFF6B7280),
+    error = NcColors.Danger,
+    onError = Color.White,
+)
+
+@Composable
+internal fun SnoopTheme(content: @Composable () -> Unit) {
+    MaterialTheme(
+        colorScheme = SnoopDarkColorScheme,
+        content = content,
+    )
+}
+
+internal fun readableContentColor(background: Color): Color {
+    val opaqueBackground = background.compositeOver(NcColors.PanelBg)
+    val lightContrast = contrastRatio(Color.White, opaqueBackground)
+    val darkContrast = contrastRatio(NcColors.TextOnLight, opaqueBackground)
+    return if (lightContrast >= darkContrast) Color.White else NcColors.TextOnLight
+}
+
+internal fun contrastRatio(foreground: Color, background: Color): Float {
+    val foregroundLuminance = foreground.luminance()
+    val backgroundLuminance = background.luminance()
+    val lighter = maxOf(foregroundLuminance, backgroundLuminance)
+    val darker = minOf(foregroundLuminance, backgroundLuminance)
+    return (lighter + 0.05f) / (darker + 0.05f)
 }
 
 /** Opacity applied to a toolbar button's fill when it is not selected / not pressed. */
@@ -123,49 +174,70 @@ internal fun NcButton(
     idleDim: Boolean = false,
     onClick: () -> Unit,
 ) {
-    var pressed by remember { mutableStateOf(false) }
-    val fill = if (idleDim) bg.copy(alpha = if (pressed) 1f else IDLE_ALPHA) else bg
+    val fill = if (idleDim) bg.copy(alpha = IDLE_ALPHA) else bg
     Box(
         modifier = Modifier
+            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
             .background(fill, RoundedCornerShape(4.dp))
-            .pointerInput(label) {
-                detectTapGestures(
-                    onPress = {
-                        pressed = true
-                        tryAwaitRelease()
-                        pressed = false
-                    },
-                    onTap = { onClick() },
-                )
-            }
+            .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        NcText(label, size = 10.sp, weight = FontWeight.Bold)
+        NcText(
+            label,
+            size = 10.sp,
+            color = readableContentColor(fill),
+            weight = FontWeight.Bold,
+        )
     }
 }
 
 /** A two-state toggle (e.g. REQ/RES): [color] at full opacity when open, [IDLE_ALPHA] when collapsed. */
 @Composable
 internal fun NcToggle(label: String, selected: Boolean, color: Color, onClick: () -> Unit) {
+    val fill = color.copy(alpha = if (selected) 1f else IDLE_ALPHA)
     Box(
         modifier = Modifier
-            .background(color.copy(alpha = if (selected) 1f else IDLE_ALPHA), RoundedCornerShape(4.dp))
-            .pointerInput(label) { detectTapGestures(onTap = { onClick() }) }
+            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+            .background(fill, RoundedCornerShape(4.dp))
+            .toggleable(
+                value = selected,
+                role = Role.Checkbox,
+                onValueChange = { onClick() },
+            )
             .padding(horizontal = 8.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        NcText(label, size = 10.sp, weight = FontWeight.Bold)
+        NcText(
+            label,
+            size = 10.sp,
+            color = readableContentColor(fill),
+            weight = FontWeight.Bold,
+        )
     }
 }
 
 @Composable
 internal fun NcChip(label: String, selected: Boolean, color: Color, onClick: () -> Unit) {
+    val fill = color.copy(alpha = if (selected) 1f else IDLE_ALPHA)
     Box(
         modifier = Modifier
-            .background(color.copy(alpha = if (selected) 1f else IDLE_ALPHA), RoundedCornerShape(12.dp))
-            .pointerInput(label) { detectTapGestures(onTap = { onClick() }) }
+            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+            .background(fill, RoundedCornerShape(12.dp))
+            .selectable(
+                selected = selected,
+                role = Role.Tab,
+                onClick = onClick,
+            )
             .padding(horizontal = 10.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        NcText(label, size = 10.sp, weight = FontWeight.Bold)
+        NcText(
+            label,
+            size = 10.sp,
+            color = readableContentColor(fill),
+            weight = FontWeight.Bold,
+        )
     }
 }
 
@@ -183,7 +255,7 @@ internal fun NcBadge(count: Int, color: Color, modifier: Modifier = Modifier) {
         NcText(
             text = if (count > 999) "999+" else count.toString(),
             size = 10.sp,
-            color = Color.White,
+            color = readableContentColor(color),
             weight = FontWeight.Bold,
         )
     }
@@ -201,7 +273,7 @@ internal fun NcSearch(value: String, onValueChange: (String) -> Unit, placeholde
     ) {
         Box(modifier = Modifier.weight(1f)) {
             if (value.isEmpty()) {
-                NcText(placeholder, size = 11.sp, color = Color(0xFF6B7280))
+                NcText(placeholder, size = 11.sp, color = NcColors.Muted)
             }
             BasicTextField(
                 value = value,

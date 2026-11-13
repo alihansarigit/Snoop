@@ -12,6 +12,7 @@ import org.json.JSONObject
  */
 internal fun NetworkTransaction.toJson(): JSONObject = JSONObject().apply {
     put("id", id)
+    sessionId?.let { put("sessionId", it) }
     put("method", method)
     put("url", url)
     put("host", host)
@@ -30,6 +31,7 @@ internal fun NetworkTransaction.toJson(): JSONObject = JSONObject().apply {
     error?.let { put("error", it) }
     put("requestDate", requestDate)
     durationMs?.let { put("durationMs", it) }
+    put("mocked", mocked)
 }
 
 /** Reconstruct a transaction, or `null` if the object is malformed. */
@@ -37,6 +39,7 @@ internal fun JSONObject.toTransaction(): NetworkTransaction? =
     try {
         NetworkTransaction(
             id = getLong("id"),
+            sessionId = optStringOrNull("sessionId"),
             method = optString("method"),
             url = optString("url"),
             host = optString("host"),
@@ -56,6 +59,7 @@ internal fun JSONObject.toTransaction(): NetworkTransaction? =
             error = optStringOrNull("error"),
             requestDate = optLong("requestDate"),
             durationMs = if (has("durationMs")) getLong("durationMs") else null,
+            mocked = optBoolean("mocked", false),
         )
     } catch (_: Exception) {
         null

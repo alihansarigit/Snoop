@@ -140,7 +140,9 @@ private fun LogRowPreview(@PreviewParameter(UIStatePreviewProvider::class) tx: N
 @Preview(name = "Dialog · list states", widthDp = 400, heightDp = 720, showBackground = true, backgroundColor = 0xFF000000)
 @Composable
 private fun DialogPreview(@PreviewParameter(UIStateListPreviewProvider::class) txs: List<NetworkTransaction>) {
-    DebugLogsContent(transactions = txs, onDismiss = {})
+    SnoopTheme {
+        DebugLogsContent(transactions = txs, onBack = {}, onClose = {})
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)

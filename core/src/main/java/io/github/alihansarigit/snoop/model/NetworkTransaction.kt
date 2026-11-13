@@ -27,6 +27,8 @@ data class NetworkTransaction(
     val error: String? = null,
     val requestDate: Long = 0,
     val durationMs: Long? = null,
+    val sessionId: String? = null,
+    val mocked: Boolean = false,
 ) {
     val isError: Boolean
         get() = status == TransactionStatus.FAILED || (responseCode != null && responseCode >= 400)

@@ -38,6 +38,7 @@ import io.github.alihansarigit.snoop.util.toCurl
 internal fun LogRow(tx: NetworkTransaction, copy: (String) -> Unit) {
     var reqOpen by remember(tx.id) { mutableStateOf(false) }
     var resOpen by remember(tx.id) { mutableStateOf(false) }
+    var mockOpen by remember(tx.id) { mutableStateOf(false) }
 
     val code = tx.responseCode
     val statusColor = when {
@@ -91,6 +92,8 @@ internal fun LogRow(tx: NetworkTransaction, copy: (String) -> Unit) {
             NcButton("CURL COPY", bg = NcColors.CopyCurl, idleDim = true) { copy(tx.toCurl()) }
             NcButton("FULL COPY", bg = NcColors.CopyFull, idleDim = true) { copy(tx.fullDump()) }
             NcButton("HAR COPY", bg = NcColors.CopyHar, idleDim = true) { copy(harExport(listOf(tx))) }
+            NcButton("REPLAY", bg = NcColors.Replay, idleDim = true) { io.github.alihansarigit.snoop.Snoop.replay(tx.id) }
+            NcButton("MOCK", bg = NcColors.Mock, idleDim = true) { mockOpen = true }
         }
 
         if (reqOpen) {
@@ -101,6 +104,9 @@ internal fun LogRow(tx: NetworkTransaction, copy: (String) -> Unit) {
             HeaderLines("RESPONSE HEADERS", tx.responseHeaders)
             JsonBody(tx.responseBody, NcColors.StrGreen, "(no response body)")
         }
+    }
+    if (mockOpen) {
+        NetworkMockDialog(transaction = tx, onDismiss = { mockOpen = false })
     }
 }
 

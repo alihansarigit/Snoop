@@ -1,4 +1,7 @@
 pluginManagement {
+    // The Snoop Gradle plugin lives in its own build so the sample can apply it by id,
+    // exactly the way a published consumer would.
+    includeBuild("gradle-plugin")
     repositories {
         google {
             content {
@@ -26,3 +29,4 @@ include(":okhttp")
 include(":ktor")
 include(":no-op")
 include(":sample")
+include(":daemon")

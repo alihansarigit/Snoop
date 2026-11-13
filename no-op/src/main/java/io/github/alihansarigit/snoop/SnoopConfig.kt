@@ -16,6 +16,14 @@ class SnoopConfig internal constructor() {
 
     var maxAgeMillis: Long = 0L
 
+    var shakeOpensFeedback: Boolean = true
+
+    var crashCaptureEnabled: Boolean = true
+
+    var logcatCaptureEnabled: Boolean = true
+
+    var desktopBridgePort: Int = 8737
+
     fun redactHeaders(vararg names: String): SnoopConfig = this
 
     fun redactBodyKeys(vararg keys: String): SnoopConfig = this

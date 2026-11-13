@@ -41,4 +41,7 @@ dependencies {
     implementation(libs.compose.material.icons)
     debugImplementation(libs.compose.ui.tooling)
     implementation(libs.compose.ui.tooling.preview)
+    testImplementation(libs.junit)
+    testImplementation(libs.json.jvm)
+    testImplementation("org.robolectric:robolectric:4.14.1")
 }

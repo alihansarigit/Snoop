@@ -25,4 +25,6 @@ android {
 dependencies {
     api(project(":core"))
     api(libs.okhttp)
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.android)
 }

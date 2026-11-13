@@ -40,13 +40,20 @@ import io.github.alihansarigit.snoop.util.harExport
 private enum class LogFilter { ALL, ERRORS, PENDING }
 
 @Composable
-internal fun DebugLogsDialog(onDismiss: () -> Unit) {
+internal fun DebugLogsDialog(
+    onBack: () -> Unit,
+    onClose: () -> Unit,
+) {
     val transactions by Snoop.store.transactions.collectAsStateWithLifecycle()
     Dialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = onBack,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        DebugLogsContent(transactions = transactions, onDismiss = onDismiss)
+        DebugLogsContent(
+            transactions = transactions,
+            onBack = onBack,
+            onClose = onClose,
+        )
     }
 }
 
@@ -55,7 +62,8 @@ internal fun DebugLogsDialog(onDismiss: () -> Unit) {
 @Composable
 internal fun DebugLogsContent(
     transactions: List<NetworkTransaction>,
-    onDismiss: () -> Unit,
+    onBack: () -> Unit,
+    onClose: () -> Unit,
 ) {
     val clipboard = LocalClipboardManager.current
     val copy: (String) -> Unit = { clipboard.setText(AnnotatedString(it)) }
@@ -93,7 +101,10 @@ internal fun DebugLogsContent(
                 size = 13.sp,
                 weight = FontWeight.Bold,
             )
-            NcButton("CLOSE", bg = NcColors.ActionClose, idleDim = true) { onDismiss() }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                NcButton("BACK", bg = NcColors.Border, idleDim = true, onClick = onBack)
+                NcButton("CLOSE", bg = NcColors.ActionClose, idleDim = true, onClick = onClose)
+            }
         }
 
         Spacer(Modifier.height(8.dp))
@@ -111,22 +122,9 @@ internal fun DebugLogsContent(
             NcButton("CLEAR", bg = NcColors.ActionClear, idleDim = true) { Snoop.clear() }
             NcButton("ALL COPY LOG", bg = NcColors.ActionCopyAll, idleDim = true) { copy(allLogsDump(filtered)) }
             NcButton("HAR COPY", bg = NcColors.ActionHar, idleDim = true) { copy(harExport(filtered)) }
-            NcButton("GİZLE", bg = NcColors.ActionHide, idleDim = true) {
-                onDismiss()
-                Snoop.hide()
-            }
         }
 
         Spacer(Modifier.height(8.dp))
-
-        if (Snoop.customSections.isNotEmpty()) {
-            Snoop.customSections.forEach { section ->
-                NcText(section.title, size = 11.sp, color = NcColors.Muted, weight = FontWeight.Bold)
-                Spacer(Modifier.height(4.dp))
-                section.content()
-                Spacer(Modifier.height(8.dp))
-            }
-        }
 
         NcSearch(value = query, onValueChange = { query = it }, placeholder = "filter by url…")
 

@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -58,6 +60,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Snoop.registerDeveloperAction("Clear response mocks", Runnable(Snoop::clearNetworkMocks))
+        Snoop.registerDeveloperAction("Restart sample", Runnable { Snoop.restartApp(this) })
+        Snoop.setFeedbackScreenContext(
+            routeName = "sample",
+            subScreen = "network-actions",
+            screenFileHint = "MainActivity.kt",
+        )
         setContent {
             MaterialTheme {
                 var shakeEnabled by remember { mutableStateOf(Snoop.shakeToShow) }
@@ -70,6 +79,22 @@ class MainActivity : ComponentActivity() {
                     onKtorPost = ::ktorPost,
                     onError = { fetch("https://jsonplaceholder.typicode.com/does-not-exist") },
                     onOpenInspector = { Snoop.launchInspector(this) },
+                    onCaptureFeedback = { Snoop.launchCapture(this) },
+                    onStartSession = {
+                        Snoop.startSession("Sample checkout ${System.currentTimeMillis()}")
+                    },
+                    onMockNextGet = {
+                        Snoop.addNetworkMock(
+                            method = "GET",
+                            urlPattern = "https://jsonplaceholder.typicode.com/posts/1",
+                            statusCode = 503,
+                            body = """{"error":"Snoop sample mock"}""",
+                        )
+                    },
+                    onCrash = {
+                        Snoop.recordAction("sample_crash_button", "tap")
+                        error("Intentional Snoop sample crash")
+                    },
                     shakeEnabled = shakeEnabled,
                     onToggleShake = {
                         Snoop.shakeToShow = !Snoop.shakeToShow
@@ -159,15 +184,19 @@ private fun SampleScreen(
     onKtorPost: () -> Unit,
     onError: () -> Unit,
     onOpenInspector: () -> Unit,
+    onCaptureFeedback: () -> Unit,
+    onStartSession: () -> Unit,
+    onMockNextGet: () -> Unit,
+    onCrash: () -> Unit,
     shakeEnabled: Boolean,
     onToggleShake: () -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text("Snoop Sample", style = MaterialTheme.typography.headlineSmall)
-        Text("Fire requests, then tap the floating bubble.")
+        Text("Fire requests, then tap the floating bubble to open the Debug Hub.")
         Button(onClick = onGet, modifier = Modifier.fillMaxWidth()) { Text("GET /posts/1") }
         Button(onClick = onList, modifier = Modifier.fillMaxWidth()) { Text("GET /posts (list)") }
         Button(onClick = onPost, modifier = Modifier.fillMaxWidth()) { Text("POST /post (auth)") }
@@ -176,6 +205,10 @@ private fun SampleScreen(
         Button(onClick = onKtorPost, modifier = Modifier.fillMaxWidth()) { Text("Ktor POST /post (auth)") }
         Button(onClick = onError, modifier = Modifier.fillMaxWidth()) { Text("GET 404") }
         Button(onClick = onOpenInspector, modifier = Modifier.fillMaxWidth()) { Text("Open inspector") }
+        Button(onClick = onCaptureFeedback, modifier = Modifier.fillMaxWidth()) { Text("Capture feedback") }
+        Button(onClick = onStartSession, modifier = Modifier.fillMaxWidth()) { Text("Start feedback session") }
+        Button(onClick = onMockNextGet, modifier = Modifier.fillMaxWidth()) { Text("Mock next GET as 503") }
+        Button(onClick = onCrash, modifier = Modifier.fillMaxWidth()) { Text("Trigger recovery crash") }
         Button(onClick = onToggleShake, modifier = Modifier.fillMaxWidth()) {
             Text("Shake-to-show: ${if (shakeEnabled) "ON" else "OFF"}")
         }

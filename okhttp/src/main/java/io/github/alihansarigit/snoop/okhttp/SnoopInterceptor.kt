@@ -3,10 +3,17 @@ package io.github.alihansarigit.snoop.okhttp
 import io.github.alihansarigit.snoop.Snoop
 import io.github.alihansarigit.snoop.model.NetworkTransaction
 import io.github.alihansarigit.snoop.model.TransactionStatus
+import io.github.alihansarigit.snoop.network.NetworkMockRegistry
+import io.github.alihansarigit.snoop.network.NetworkReplayRegistry
 import io.github.alihansarigit.snoop.util.decodeBody
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.Interceptor
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
 import java.io.IOException
 
@@ -30,10 +37,12 @@ class SnoopInterceptor @JvmOverloads constructor(
         val id = Snoop.store.nextId()
         val url = request.url
         val (requestBody, requestSize) = readRequestBody(request)
+        val sessionId = Snoop.activeSessionId()
 
         Snoop.store.put(
             NetworkTransaction(
                 id = id,
+                sessionId = sessionId,
                 method = request.method,
                 url = url.toString(),
                 host = url.host,
@@ -46,6 +55,40 @@ class SnoopInterceptor @JvmOverloads constructor(
                 requestDate = System.currentTimeMillis(),
             ),
         )
+        registerReplay(id, chain.call())
+
+        NetworkMockRegistry.match(request.method, url.toString())?.let { mock ->
+            val responseHeaders = mock.headers.toMutableMap().apply {
+                putIfAbsent("Content-Type", "application/json; charset=utf-8")
+                put("X-Snoop-Mock", mock.id)
+            }
+            val mediaType = responseHeaders.entries
+                .firstOrNull { it.key.equals("Content-Type", ignoreCase = true) }
+                ?.value
+                ?.toMediaTypeOrNull()
+            val response = Response.Builder()
+                .request(request)
+                .protocol(Protocol.HTTP_1_1)
+                .code(mock.statusCode)
+                .message("Snoop Mock")
+                .apply { responseHeaders.forEach { (name, value) -> addHeader(name, value) } }
+                .body(mock.body.toResponseBody(mediaType))
+                .build()
+            Snoop.store.update(id) {
+                it.copy(
+                    responseCode = mock.statusCode,
+                    responseMessage = "Snoop Mock",
+                    responseHeaders = responseHeaders.map { header -> header.key to header.value },
+                    responseBody = mock.body,
+                    responseContentType = mediaType?.toString(),
+                    responseBodySize = mock.body.toByteArray().size.toLong(),
+                    status = TransactionStatus.COMPLETE,
+                    durationMs = 0L,
+                    mocked = true,
+                )
+            }
+            return response
+        }
 
         val startNs = System.nanoTime()
         val response = try {
@@ -117,6 +160,19 @@ class SnoopInterceptor @JvmOverloads constructor(
         }
 
     private fun elapsedMs(startNs: Long): Long = (System.nanoTime() - startNs) / 1_000_000
+
+    private fun registerReplay(id: Long, call: Call) {
+        NetworkReplayRegistry.register(id) {
+            call.clone().enqueue(
+                object : Callback {
+                    override fun onFailure(call: Call, e: IOException) = Unit
+                    override fun onResponse(call: Call, response: Response) {
+                        response.close()
+                    }
+                },
+            )
+        }
+    }
 
     private companion object {
         const val DEFAULT_MAX_BODY_BYTES = 250_000L

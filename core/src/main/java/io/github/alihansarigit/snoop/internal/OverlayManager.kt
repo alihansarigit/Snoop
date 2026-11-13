@@ -11,7 +11,16 @@ import android.widget.FrameLayout
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.LifecycleOwner
 import io.github.alihansarigit.snoop.ui.SnoopOverlay
+import io.github.alihansarigit.snoop.Snoop
+import io.github.alihansarigit.snoop.diagnostics.BreadcrumbWindowCallbacks
+import io.github.alihansarigit.snoop.diagnostics.ScreenshotCapture
+import io.github.alihansarigit.snoop.feedback.BreadcrumbRecorder
 import java.lang.ref.WeakReference
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Attaches the [SnoopOverlay] ComposeView on top of every resumed activity, and —
@@ -24,11 +33,21 @@ internal class OverlayManager : Application.ActivityLifecycleCallbacks {
     private var sensorManager: SensorManager? = null
     private var resumedActivity: WeakReference<Activity>? = null
     private val shakeDetector = ShakeDetector(onShake = ::onShake)
+    private val breadcrumbCallbacks = BreadcrumbWindowCallbacks()
+    private val scope = CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
 
     override fun onActivityResumed(activity: Activity) {
         attachOverlay(activity)
+        breadcrumbCallbacks.install(activity)
         resumedActivity = WeakReference(activity)
+        BreadcrumbRecorder.record("navigation", activity.javaClass.name)
         startShakeDetection(activity)
+        scope.launch {
+            delay(350)
+            if (!activity.isFinishing && !activity.isDestroyed) {
+                ScreenshotCapture.refreshLastGood(activity)
+            }
+        }
     }
 
     override fun onActivityPaused(activity: Activity) {
@@ -43,7 +62,13 @@ internal class OverlayManager : Application.ActivityLifecycleCallbacks {
     }
 
     private fun onShake() {
-        if (OverlayState.shakeToShowEnabled) OverlayState.visible = true
+        if (!OverlayState.shakeToShowEnabled) return
+        val activity = resumedActivity?.get() ?: return
+        if (Snoop.config.shakeOpensFeedback) {
+            Snoop.launchCapture(activity)
+        } else {
+            OverlayState.visible = true
+        }
     }
 
     private fun attachOverlay(activity: Activity) {
@@ -83,11 +108,18 @@ internal class OverlayManager : Application.ActivityLifecycleCallbacks {
         sensorManager = null
     }
 
-    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+    internal fun currentActivity(): Activity? = resumedActivity?.get()
+
+    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+        BreadcrumbRecorder.record("lifecycle", "${activity.javaClass.simpleName}.created")
+    }
     override fun onActivityStarted(activity: Activity) {}
     override fun onActivityStopped(activity: Activity) {}
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
-    override fun onActivityDestroyed(activity: Activity) {}
+    override fun onActivityDestroyed(activity: Activity) {
+        breadcrumbCallbacks.uninstall(activity)
+        BreadcrumbRecorder.record("lifecycle", "${activity.javaClass.simpleName}.destroyed")
+    }
 
     private companion object {
         const val BUBBLE_TAG = "snoop_bubble"

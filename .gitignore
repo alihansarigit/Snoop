@@ -38,3 +38,9 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# IntelliJ run configurations (machine-specific AVD; use ./gradlew runOnEmulator)
+.run/
+
+# Snoop feedback bundles transferred from a device by the daemon bridge
+agent-feedback/
