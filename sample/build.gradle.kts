@@ -41,10 +41,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-
-    kotlinOptions {
-        jvmTarget = "17"
-    }
 }
 
 dependencies {
@@ -170,4 +166,10 @@ val runOnEmulator by tasks.registering {
 // keeps this lazy because AGP registers installDebug during afterEvaluate.
 tasks.matching { it.name == "installDebug" }.configureEach {
     mustRunAfter(bootEmulator)
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
 }
